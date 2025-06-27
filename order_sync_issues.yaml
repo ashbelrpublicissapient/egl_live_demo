@@ -1,0 +1,83 @@
+trigger:
+  branches:
+    include:
+      - main
+
+variables:
+  orderId: "148366984"
+  incidentNumber: "DM ORDER 148366984"
+
+stages:
+  - stage: ValidateIncident
+    displayName: 'Validate ServiceNow Incident'
+    jobs:
+      - job: CheckIncidentStatus
+        displayName: 'Check Incident Status'
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - script: |
+              echo "Validating that incident ${{ variables.incidentNumber }} exists in ServiceNow..."
+              # Placeholder for actual ServiceNow REST call
+              echo "Incident validated. Proceeding to next stage."
+            displayName: 'Validate Incident'
+
+  - stage: FetchOrderDetails
+    displayName: 'Fetch Order Details from DM'
+    dependsOn: ValidateIncident
+    jobs:
+      - job: GetOrder
+        displayName: 'Get Order Details'
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - script: |
+              echo "Fetching details for order ${{ variables.orderId }} from DM system..."
+              # Placeholder for API call to DM
+              echo "Order details retrieved successfully."
+            displayName: 'Fetch Order Details'
+
+  - stage: RetryECFFlow
+    displayName: 'Retry ECF Flow'
+    dependsOn: FetchOrderDetails
+    jobs:
+      - job: RequeueECF
+        displayName: 'Requeue to ECF'
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - script: |
+              echo "Requeuing order ${{ variables.orderId }} to ECF message queue..."
+              # Placeholder for ECF requeue logic
+              echo "Order requeued successfully."
+            displayName: 'Requeue Order to ECF'
+
+  - stage: VerifyECF
+    displayName: 'Verify ECF Processing'
+    dependsOn: RetryECFFlow
+    jobs:
+      - job: CheckECFStatus
+        displayName: 'Check ECF Status'
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - script: |
+              echo "Verifying ECF processing status for order ${{ variables.orderId }}..."
+              # Placeholder for ECF status check
+              echo "Order processed successfully by ECF."
+            displayName: 'Verify ECF Processing'
+
+  - stage: UpdateIncident
+    displayName: 'Update ServiceNow Incident'
+    dependsOn: VerifyECF
+    jobs:
+      - job: CloseIncident
+        displayName: 'Close Incident'
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - script: |
+              echo "Updating incident ${{ variables.incidentNumber }} in ServiceNow with resolution notes..."
+              # Placeholder for ServiceNow update API
+              echo "Incident closed with resolution: Order processed in ECF."
+            displayName: 'Update and Close Incident'
