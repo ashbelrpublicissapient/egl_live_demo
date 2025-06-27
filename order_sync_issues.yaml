@@ -66,18 +66,3 @@ stages:
               # Placeholder for ECF status check
               echo "Order processed successfully by ECF."
             displayName: 'Verify ECF Processing'
-
-  - stage: UpdateIncident
-    displayName: 'Update ServiceNow Incident'
-    dependsOn: VerifyECF
-    jobs:
-      - job: CloseIncident
-        displayName: 'Close Incident'
-        pool:
-          vmImage: 'ubuntu-latest'
-        steps:
-          - script: |
-              echo "Updating incident ${{ variables.incidentNumber }} in ServiceNow with resolution notes..."
-              # Placeholder for ServiceNow update API
-              echo "Incident closed with resolution: Order processed in ECF."
-            displayName: 'Update and Close Incident'
