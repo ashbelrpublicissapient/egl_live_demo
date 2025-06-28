@@ -1,0 +1,124 @@
+trigger:
+  branches:
+    include:
+      - main
+
+variables:
+  incidentNumber: "Securely delete customer data using Shopper ID 2773436"
+  shopperId: "2773436"
+  apiVersion: "v23_2"
+  instance: "<instance>"  # replace with real CC instance name
+
+stages:
+
+  # 1. Retrieve OAuth2 access‑token for Commerce Cloud OCAPI
+  - stage: GetOAuthToken
+    displayName: 'Get OAuth Token for OCAPI'
+    dependsOn: ValidateIncident
+    jobs:
+      - job: FetchToken
+        displayName: 'Fetch Token'
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - script: |
+              echo "Requesting new access token at https://dbc-${{ variables.instance }}.commercecloud.salesforce.com/dw/oauth2/access_token …"
+              # curl -X POST … (placeholder)
+              echo "Token acquired."
+            displayName: 'Request Token'
+
+  # 2. Lock/disable the shopper to prevent new activity while deletion is in progress
+  - stage: LockAccount
+    displayName: 'Lock Shopper Account'
+    dependsOn: GetOAuthToken
+    jobs:
+      - job: DisableShopper
+        displayName: 'Disable Shopper Login'
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - script: |
+              echo "Locking shopper ${{ variables.shopperId }} to block logins / checkouts…"
+              # Dummy PATCH call placeholder
+              echo "Shopper account locked."
+            displayName: 'Lock Customer'
+
+  # 3. Delete main customer record via OCAPI  
+  - stage: DeleteCustomerOCAPI
+    displayName: 'Delete Customer via OCAPI'
+    dependsOn: LockAccount
+    jobs:
+      - job: DeleteShopper
+        displayName: 'Delete Shopper Record'
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - script: |
+              echo "Deleting customer https://${{ variables.instance }}.commercecloud.salesforce.com/s/-/dw/data/${{ variables.apiVersion }}/customers/${{ variables.shopperId }}…"
+              # Dummy DELETE call placeholder
+              echo "Customer core profile deleted."
+            displayName: 'Delete Customer Profile'
+
+  # 4. Scrub auxiliary data stores (wish‑lists, baskets, order history)
+  - stage: PurgeAuxiliaryData
+    displayName: 'Purge Auxiliary Data'
+    dependsOn: DeleteCustomerOCAPI
+    jobs:
+      - job: ScrubData
+        displayName: 'Scrub Wish‑lists, Baskets, Orders'
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - script: |
+              echo "Invoking internal retention‑service to delete wish‑lists, baskets and personal data for shopper ${{ variables.shopperId }}…"
+              # Dummy API call placeholder
+              echo "Auxiliary data purged."
+            displayName: 'Purge Extra Data'
+
+  # 5. Stop downstream CRM or marketing sync
+  - stage: StopCRMSync
+    displayName: 'Stop CRM / ESP Sync'
+    dependsOn: PurgeAuxiliaryData
+    jobs:
+      - job: UpdateSyncFlag
+        displayName: 'Disable Outbound Sync'
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - script: |
+              echo "Setting sync flags off for shopper ${{ variables.shopperId }} in CRM/ESP…"
+              # Dummy call placeholder
+              echo "Outbound sync disabled."
+            displayName: 'Disable Sync Flag'
+
+  # 6. Run compliance & audit log
+  - stage: ComplianceAudit
+    displayName: 'Compliance & Audit Record'
+    dependsOn: StopCRMSync
+    jobs:
+      - job: GenerateAudit
+        displayName: 'Generate Deletion Audit Log'
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - script: |
+              echo "Recording GDPR/CCPA deletion for shopper ${{ variables.shopperId }} in audit repository…"
+              # Dummy database insert placeholder
+              echo "Audit log written."
+            displayName: 'Write Audit Log'
+
+  # 7. Close the ServiceNow incident with resolution details
+  - stage: CloseIncident
+    displayName: 'Update & Close ServiceNow Incident'
+    dependsOn: ComplianceAudit
+    jobs:
+      - job: ResolveIncident
+        displayName: 'Resolve Incident'
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - script: |
+              echo "Updating incident '${{ variables.incidentNumber }}' in ServiceNow with resolution notes and closing…"
+              # Dummy REST call placeholder to update ticket
+              echo "Incident closed — customer data securely deleted."
+            displayName: 'Close Out Incident'
