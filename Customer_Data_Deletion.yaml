@@ -10,11 +10,9 @@ variables:
   instance: "<instance>"  # replace with real CC instance name
 
 stages:
-
   # 1. Retrieve OAuth2 access‑token for Commerce Cloud OCAPI
   - stage: GetOAuthToken
     displayName: 'Get OAuth Token for OCAPI'
-    dependsOn: ValidateIncident
     jobs:
       - job: FetchToken
         displayName: 'Fetch Token'
